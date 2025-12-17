@@ -1,6 +1,18 @@
 # my-shiba 🐕
 
-Slack Bot to display your GitHub contribution graph (草) on demand.
+<p align="center">
+  <img src="icon.png" alt="my-shiba icon" width="200" />
+</p>
+
+<p align="center">
+  <strong>Slack Bot to display your GitHub contribution graph (草) on demand.</strong>
+</p>
+
+## About the Name
+
+**my-shiba** は「豆しば」のパロディで、「芝生（草）やし」という意味も込められています。
+
+名前とアイコンは、妻によってデザインされました 💚
 
 ## 開発のストーリー
 
