@@ -61,10 +61,43 @@ npm run deploy
    - `chat:write`
    - `files:write` (required for uploading GitHub stats images)
 3. Enable Event Subscriptions
-4. Subscribe to bot events:
-   - `app_mention`
-5. Set Request URL to your Cloudflare Worker URL: `https://my-shiba.<your-subdomain>.workers.dev/slack/events`
+4. **Event Subscriptions**で、`app_mention`イベントを有効化する
+5. Request URLに、デプロイしたWorkerのURL + `/slack/events`を設定
+   - 例: `https://my-shiba.<your-subdomain>.workers.dev/slack/events`
 6. Install the app to your workspace
+
+## GitHub Actionsによる自動デプロイ
+
+このリポジトリには、`main`ブランチへのpush時に自動的にCloudflare Workersへデプロイするワークフローが含まれています。
+
+### セットアップ手順
+
+1. **GitHubリポジトリのSecretsを設定**
+
+   リポジリの Settings → Secrets and variables → Actions で以下のSecretsを追加：
+
+   - `CLOUDFLARE_API_TOKEN`: Cloudflare API Token
+     - https://dash.cloudflare.com/profile/api-tokens から作成
+     - "Edit Cloudflare Workers" テンプレートを使用
+   
+   - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare Account ID
+     - https://dash.cloudflare.com/ の右側に表示されている
+   
+   - `SLACK_BOT_TOKEN`: Slack Bot User OAuth Token
+   
+   - `SLACK_SIGNING_SECRET`: Slack Appの Signing Secret
+   
+   - `GITHUB_USERNAME`: GitHubのユーザー名（草を表示したい）
+
+2. **デプロイ**
+
+   `main`ブランチにpushするだけで自動的にデプロイされます：
+
+   ```bash
+   git push origin main
+   ```
+
+   または、GitHub Actions タブから手動でトリガーできます。
 
 ## Usage
 
