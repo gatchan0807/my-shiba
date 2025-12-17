@@ -2,6 +2,20 @@
 
 Slack Bot to display your GitHub contribution graph (草) on demand.
 
+## 開発のストーリー
+
+このプロジェクトは、**完全 AI ペアプログラミング**で作成されました。
+
+「GitHub の草を Slack で見たい」という雑な要望から始まり、
+`invalid_blocks`、`invalid_arguments`、WASM の制約など、
+数々の技術的な壁を乗り越えて完成しました。
+
+**何より楽しかったのは**、AI に「こうしたい」とざっくり伝えるだけで、
+技術調査から実装、デバッグまで全部サポートしてくれること。
+自分の欲しいものがシュッと作れる体験は最高でした！
+
+詳しい開発の軌跡は [docs/development-journey.md](docs/development-journey.md) をご覧ください。
+
 ## Features
 
 - 📊 Display GitHub contribution graph by mentioning the bot
@@ -114,4 +128,15 @@ The bot will reply with your GitHub contribution graph!
 - **Runtime**: Cloudflare Workers
 - **Framework**: Hono
 - **Language**: TypeScript
-- **GitHub Graph**: ghchart.rshah.org API
+- **SVG → PNG**: @resvg/resvg-wasm
+- **GitHub Grass**: ghchart.rshah.org API
+
+## Development
+
+詳しい開発の経緯と技術的な課題の解決方法は、以下をご覧ください：
+
+📖 [開発の軌跡 (Development Journey)](docs/development-journey.md)
+
+## License
+
+MIT
