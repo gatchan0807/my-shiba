@@ -6,7 +6,12 @@ compatibility_date = "2024-12-01"
 [observability]
 enabled = true
 
+# Cron Triggers - Daily grass report at 8:00 AM JST (23:00 UTC)
+[triggers]
+crons = ["0 23 * * *"]
+
 # Environment variables (set using `wrangler secret put <KEY>`)
 # SLACK_BOT_TOKEN
 # SLACK_SIGNING_SECRET
 # GH_USERNAME
+# SLACK_CHANNEL_ID (for cron job)

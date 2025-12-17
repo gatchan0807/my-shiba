@@ -12,7 +12,8 @@
 
 **my-shiba** は「豆しば」のパロディで、「芝生（草）やし」という意味も込められています。
 
-名前とアイコンは、妻によってデザインされました 💚
+- **名前**: @gatchan0807 が命名
+- **アイコン**: デザイナーの妻が制作 💚
 
 ## 開発のストーリー
 
@@ -28,9 +29,12 @@
 
 詳しい開発の軌跡は [docs/development-journey.md](docs/development-journey.md) をご覧ください。
 
-## Features
+##Features
 
 - 📊 Display GitHub contribution graph by mentioning the bot
+- ⏰ Daily automated grass report (optional, via Cron Triggers)
+- 💾 Historical snapshots saved in Slack
+- 🖼️ SVG → PNG conversion using WASM
 - ⚡ Fast response using Cloudflare Workers
 - 🔒 Secure Slack request verification
 
@@ -127,6 +131,8 @@ npm run deploy
 
 ## Usage
 
+### Manual Posting
+
 Mention the bot in any channel:
 
 ```
@@ -134,6 +140,27 @@ Mention the bot in any channel:
 ```
 
 The bot will reply with your GitHub contribution graph!
+
+### Daily Automated Report (Optional)
+
+毎朝8時（JST）に自動で草を投稿する機能を有効にできます。
+
+1. **SLACK_CHANNEL_IDを設定**:
+   ```bash
+   npx wrangler secret put SLACK_CHANNEL_ID
+   ```
+   
+   チャンネルIDの取得方法：
+   - Slackでチャンネルを開く
+   - チャンネル名をクリック → 詳細を表示
+   - 一番下に表示されている「チャンネルID」をコピー
+
+2. **デプロイ**:
+   ```bash
+   npm run deploy
+   ```
+
+設定後、毎朝8時（JST）に指定したチャンネルに草が自動投稿されます 🌱
 
 ## Tech Stack
 

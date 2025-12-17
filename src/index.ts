@@ -7,6 +7,7 @@ type Bindings = {
     SLACK_BOT_TOKEN: string;
     SLACK_SIGNING_SECRET: string;
     GH_USERNAME: string;
+    SLACK_CHANNEL_ID?: string; // Optional: for cron job
 };
 
 // Slack API response types
@@ -182,4 +183,42 @@ async function postToSlack(
     console.log('[postToSlack] PNG file uploaded and shared successfully!');
 }
 
-export default app;
+// Scheduled event handler for cron triggers
+export default {
+    async fetch(request: Request, env: Bindings): Promise<Response> {
+        return app.fetch(request, env);
+    },
+    async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext): Promise<void> {
+        console.log('[scheduled] Cron trigger fired at:', new Date(event.scheduledTime).toISOString());
+
+        // Check if SLACK_CHANNEL_ID is configured
+        if (!env.SLACK_CHANNEL_ID) {
+            console.warn('[scheduled] SLACK_CHANNEL_ID not configured, skipping cron job');
+            return;
+        }
+
+        try {
+            // Initialize WASM if not already done
+            if (!wasmInitialized) {
+                await ensureWasmInitialized();
+            }
+
+            const githubUsername = env.GH_USERNAME;
+            const channel = env.SLACK_CHANNEL_ID;
+
+            console.log(`[scheduled] Posting daily grass report for ${githubUsername} to channel ${channel}`);
+
+            // Post GitHub grass (without thread_ts for cron job)
+            await postToSlack(
+                env.SLACK_BOT_TOKEN,
+                channel,
+                githubUsername,
+                '' // No thread for scheduled posts
+            );
+
+            console.log('[scheduled] Daily grass report posted successfully!');
+        } catch (error) {
+            console.error('[scheduled] Error posting daily grass report:', error);
+        }
+    },
+};
