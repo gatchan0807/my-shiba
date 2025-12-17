@@ -1,0 +1,21 @@
+{
+    "name": "my-shiba",
+    "version": "0.1.0",
+    "description": "Slack Bot to display GitHub contribution graph",
+    "type": "module",
+    "scripts": {
+        "dev": "wrangler dev",
+        "deploy": "wrangler deploy",
+        "build": "tsc"
+    },
+    "devDependencies": {
+        "@cloudflare/workers-types": "^4.20241127.0",
+        "@types/node": "^22.10.2",
+        "typescript": "^5.7.2",
+        "wrangler": "^3.102.0"
+    },
+    "dependencies": {
+        "@resvg/resvg-wasm": "^2.6.2",
+        "hono": "^4.6.14"
+    }
+}

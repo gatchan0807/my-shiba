@@ -1,0 +1,12 @@
+name = "my-shiba"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# Observability settings - Enable logs
+[observability]
+enabled = true
+
+# Environment variables (set using `wrangler secret put <KEY>`)
+# SLACK_BOT_TOKEN
+# SLACK_SIGNING_SECRET
+# GITHUB_USERNAME
