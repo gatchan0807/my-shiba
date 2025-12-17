@@ -6,7 +6,7 @@ import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
 type Bindings = {
     SLACK_BOT_TOKEN: string;
     SLACK_SIGNING_SECRET: string;
-    GITHUB_USERNAME: string;
+    GH_USERNAME: string;
 };
 
 // Slack API response types
@@ -54,7 +54,7 @@ app.post('/slack/events', async (c) => {
 
         // Handle app_mention events
         if (body.event?.type === 'app_mention') {
-            const githubUsername = c.env.GITHUB_USERNAME;
+            const githubUsername = c.env.GH_USERNAME;
             const channel = body.event.channel;
             const threadTs = body.event.ts;
 

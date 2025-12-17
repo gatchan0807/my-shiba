@@ -9,4 +9,4 @@ enabled = true
 # Environment variables (set using `wrangler secret put <KEY>`)
 # SLACK_BOT_TOKEN
 # SLACK_SIGNING_SECRET
-# GITHUB_USERNAME
+# GH_USERNAME

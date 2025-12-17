@@ -41,7 +41,7 @@ cp .dev.vars.example .dev.vars
 Required variables:
 - `SLACK_BOT_TOKEN`: Your Slack Bot User OAuth Token
 - `SLACK_SIGNING_SECRET`: Your Slack App Signing Secret
-- `GITHUB_USERNAME`: Your GitHub username
+- `GH_USERNAME`: Your GitHub username
 
 ### 3. Run locally
 
@@ -58,7 +58,7 @@ First, set up your secrets:
 ```bash
 npx wrangler secret put SLACK_BOT_TOKEN
 npx wrangler secret put SLACK_SIGNING_SECRET
-npx wrangler secret put GITHUB_USERNAME
+npx wrangler secret put GH_USERNAME
 ```
 
 Then deploy:
@@ -101,7 +101,7 @@ npm run deploy
    
    - `SLACK_SIGNING_SECRET`: Slack Appの Signing Secret
    
-   - `GITHUB_USERNAME`: GitHubのユーザー名（草を表示したい）
+   - `GH_USERNAME`: GitHubのユーザー名（草を表示したい）
 
 2. **デプロイ**
 
