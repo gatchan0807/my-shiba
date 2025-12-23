@@ -101,10 +101,15 @@ function addEvenPadding(svgText: string): string {
     const originalWidth = parseInt(widthMatch[1], 10);
     const originalHeight = parseInt(heightMatch[1], 10);
 
-    // Add padding (30px on all sides for balanced look)
-    const padding = 30;
-    const newWidth = originalWidth + padding * 2;
-    const newHeight = originalHeight + padding * 2;
+    // Add asymmetric padding for better visual balance
+    // Left side has less padding, top/right/bottom have moderate padding
+    const paddingLeft = 10;
+    const paddingTop = 15;
+    const paddingRight = 15;
+    const paddingBottom = 15;
+
+    const newWidth = originalWidth + paddingLeft + paddingRight;
+    const newHeight = originalHeight + paddingTop + paddingBottom;
 
     // Create new SVG tag with updated dimensions
     // Fix: viewBox should use original dimensions, not new dimensions
@@ -113,9 +118,8 @@ function addEvenPadding(svgText: string): string {
         .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
 
     // Handle viewBox attribute properly to avoid duplication
-    // CRITICAL FIX: viewBox must use NEW dimensions (with padding) to display full content
-    // Previous implementation used originalWidth/originalHeight which caused right edge to be cut off
-    const newViewBox = `viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`;
+    // CRITICAL: viewBox must use NEW dimensions (with padding) to display full content
+    const newViewBox = `viewBox="-${paddingLeft} -${paddingTop} ${newWidth} ${newHeight}"`;
 
     if (/viewBox="[^"]*"/.test(newSvgTag)) {
         // Replace existing viewBox
@@ -126,7 +130,9 @@ function addEvenPadding(svgText: string): string {
     }
 
     const result = svgText.replace(svgMatch[0], newSvgTag);
-    console.log(`[addEvenPadding] Added ${padding}px padding: ${originalWidth}x${originalHeight} -> ${newWidth}x${newHeight}`);
+    console.log(`[addEvenPadding] Added asymmetric padding: L${paddingLeft} T${paddingTop} R${paddingRight} B${paddingBottom}`);
+    console.log(`[addEvenPadding] Size change: ${originalWidth}x${originalHeight} -> ${newWidth}x${newHeight}`);
+    console.log(`[addEvenPadding] viewBox: -${paddingLeft} -${paddingTop} ${newWidth} ${newHeight}`);
 
     return result;
 }
