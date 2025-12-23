@@ -88,27 +88,40 @@ function addEvenPadding(svgText: string): string {
     }
 
     const svgTag = svgMatch[0];
-    const widthMatch = svgTag.match(/width="(\d+)"/);
-    const heightMatch = svgTag.match(/height="(\d+)"/);
+    // Improved regex to handle decimals and optional 'px' unit
+    const widthMatch = svgTag.match(/width="([\d.]+)(?:px)?"/);
+    const heightMatch = svgTag.match(/height="([\d.]+)(?:px)?"/);
 
     if (!widthMatch || !heightMatch) {
         console.warn('[addEvenPadding] Could not extract width/height, returning original');
         return svgText;
     }
 
-    const originalWidth = parseInt(widthMatch[1]);
-    const originalHeight = parseInt(heightMatch[1]);
+    // Always specify radix (10) for parseInt
+    const originalWidth = parseInt(widthMatch[1], 10);
+    const originalHeight = parseInt(heightMatch[1], 10);
 
     // Add padding (30px on all sides for balanced look)
     const padding = 30;
     const newWidth = originalWidth + padding * 2;
     const newHeight = originalHeight + padding * 2;
 
-    // Create new SVG tag with updated dimensions and viewBox
-    const newSvgTag = svgTag
-        .replace(/width="\d+"/, `width="${newWidth}"`)
-        .replace(/height="\d+"/, `height="${newHeight}"`)
-        .replace(/<svg/, `<svg viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`);
+    // Create new SVG tag with updated dimensions
+    // Fix: viewBox should use original dimensions, not new dimensions
+    let newSvgTag = svgTag
+        .replace(/width="[\d.]+(?:px)?"/, `width="${newWidth}"`)
+        .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
+
+    // Handle viewBox attribute properly to avoid duplication
+    const newViewBox = `viewBox="-${padding} -${padding} ${originalWidth} ${originalHeight}"`;
+
+    if (/viewBox="[^"]*"/.test(newSvgTag)) {
+        // Replace existing viewBox
+        newSvgTag = newSvgTag.replace(/viewBox="[^"]*"/, newViewBox);
+    } else {
+        // Add viewBox to the svg tag
+        newSvgTag = newSvgTag.replace(/^<svg([^>]*)>/, `<svg$1 ${newViewBox}>`);
+    }
 
     const result = svgText.replace(svgMatch[0], newSvgTag);
     console.log(`[addEvenPadding] Added ${padding}px padding: ${originalWidth}x${originalHeight} -> ${newWidth}x${newHeight}`);
