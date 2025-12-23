@@ -78,6 +78,44 @@ app.post('/slack/events', async (c) => {
     }
 });
 
+// Helper function to add even padding to SVG
+function addEvenPadding(svgText: string): string {
+    // Extract the SVG tag to get width and height
+    const svgMatch = svgText.match(/<svg[^>]*>/);
+    if (!svgMatch) {
+        console.warn('[addEvenPadding] Could not find SVG tag, returning original');
+        return svgText;
+    }
+
+    const svgTag = svgMatch[0];
+    const widthMatch = svgTag.match(/width="(\d+)"/);
+    const heightMatch = svgTag.match(/height="(\d+)"/);
+
+    if (!widthMatch || !heightMatch) {
+        console.warn('[addEvenPadding] Could not extract width/height, returning original');
+        return svgText;
+    }
+
+    const originalWidth = parseInt(widthMatch[1]);
+    const originalHeight = parseInt(heightMatch[1]);
+
+    // Add padding (30px on all sides for balanced look)
+    const padding = 30;
+    const newWidth = originalWidth + padding * 2;
+    const newHeight = originalHeight + padding * 2;
+
+    // Create new SVG tag with updated dimensions and viewBox
+    const newSvgTag = svgTag
+        .replace(/width="\d+"/, `width="${newWidth}"`)
+        .replace(/height="\d+"/, `height="${newHeight}"`)
+        .replace(/<svg/, `<svg viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`);
+
+    const result = svgText.replace(svgMatch[0], newSvgTag);
+    console.log(`[addEvenPadding] Added ${padding}px padding: ${originalWidth}x${originalHeight} -> ${newWidth}x${newHeight}`);
+
+    return result;
+}
+
 // Helper function to convert SVG to PNG and upload to Slack
 async function postToSlack(
     token: string,
@@ -96,16 +134,21 @@ async function postToSlack(
         throw new Error(`Failed to fetch SVG: ${svgResponse.statusText}`);
     }
 
-    const svgText = await svgResponse.text();
+    let svgText = await svgResponse.text();
     console.log(`[postToSlack] SVG fetched, size: ${svgText.length} chars`);
 
+    // Add even padding to SVG by adjusting viewBox
+    svgText = addEvenPadding(svgText);
+
     // Convert SVG to PNG using resvg-wasm
+    // Target size: 1500x260 (from original 663x104)
     console.log('[postToSlack] Converting SVG to PNG...');
     const resvg = new Resvg(svgText, {
         fitTo: {
             mode: 'width',
-            value: 1200,
+            value: 1500, // Increased from 1200 to 1500
         },
+        background: '#ffffff', // White background for better Slack display
     });
 
     const pngData = resvg.render();
