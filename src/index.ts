@@ -113,7 +113,9 @@ function addEvenPadding(svgText: string): string {
         .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
 
     // Handle viewBox attribute properly to avoid duplication
-    const newViewBox = `viewBox="-${padding} -${padding} ${originalWidth} ${originalHeight}"`;
+    // CRITICAL FIX: viewBox must use NEW dimensions (with padding) to display full content
+    // Previous implementation used originalWidth/originalHeight which caused right edge to be cut off
+    const newViewBox = `viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`;
 
     if (/viewBox="[^"]*"/.test(newSvgTag)) {
         // Replace existing viewBox
