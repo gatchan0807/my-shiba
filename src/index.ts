@@ -68,12 +68,11 @@ app.post('/slack/events', async (c) => {
             // Initialize WASM if not already done
             await ensureWasmInitialized();
 
-            // Post GitHub grass as PNG file to Slack
+            // Post GitHub grass as PNG file to Slack (no thread, post to channel directly)
             await postToSlack(
                 c.env.SLACK_BOT_TOKEN,
                 channel,
-                githubUsername,
-                threadTs
+                githubUsername
             );
         }
 
@@ -84,62 +83,58 @@ app.post('/slack/events', async (c) => {
     }
 });
 
-// Helper function to add even padding to SVG
-export function addEvenPadding(svgText: string): string {
-    // Extract the SVG tag to get width and height
+// Enhance SVG: show all labels, increase font size, add uniform padding
+export function enhanceSvg(svgText: string): string {
     const svgMatch = svgText.match(/<svg[^>]*>/);
     if (!svgMatch) {
-        console.warn('[addEvenPadding] Could not find SVG tag, returning original');
+        console.warn('[enhanceSvg] Could not find SVG tag, returning original');
         return svgText;
     }
 
     const svgTag = svgMatch[0];
-    // Improved regex to handle decimals and optional 'px' unit
     const widthMatch = svgTag.match(/width="([\d.]+)(?:px)?"/);
     const heightMatch = svgTag.match(/height="([\d.]+)(?:px)?"/);
 
     if (!widthMatch || !heightMatch) {
-        console.warn('[addEvenPadding] Could not extract width/height, returning original');
+        console.warn('[enhanceSvg] Could not extract width/height, returning original');
         return svgText;
     }
 
     const originalWidth = parseInt(widthMatch[1], 10);
     const originalHeight = parseInt(heightMatch[1], 10);
 
-    // Add asymmetric padding for better visual balance
-    // Left side has less padding, top/right/bottom have moderate padding
-    const paddingLeft = 10;
-    const paddingTop = 15;
-    const paddingRight = 15;
-    const paddingBottom = 15;
+    const padding = 15;
+    const newWidth = originalWidth + padding * 2;
+    const newHeight = originalHeight + padding * 2;
 
-    const newWidth = originalWidth + paddingLeft + paddingRight;
-    const newHeight = originalHeight + paddingTop + paddingBottom;
+    let result = svgText;
 
+    // Show hidden day labels (Sun, Tue, Thu, Sat have display:none)
+    result = result.replace(/display:none;/g, '');
+
+    // Update SVG tag with new dimensions and viewBox
     let newSvgTag = svgTag
         .replace(/width="[\d.]+(?:px)?"/, `width="${newWidth}"`)
         .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
 
-    // viewBox uses padded dimensions with negative origin to offset content
-    const newViewBox = `viewBox="-${paddingLeft} -${paddingTop} ${newWidth} ${newHeight}"`;
+    const newViewBox = `viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`;
 
     if (/viewBox="[^"]*"/.test(newSvgTag)) {
-        // Replace existing viewBox
         newSvgTag = newSvgTag.replace(/viewBox="[^"]*"/, newViewBox);
     } else {
-        // Add viewBox to the svg tag
         newSvgTag = newSvgTag.replace(/^<svg([^>]*)>/, `<svg$1 ${newViewBox}>`);
     }
 
-    return svgText.replace(svgMatch[0], newSvgTag);
+    result = result.replace(svgMatch[0], newSvgTag);
+
+    return result;
 }
 
 // Helper function to convert SVG to PNG and upload to Slack
 async function postToSlack(
     token: string,
     channel: string,
-    githubUsername: string,
-    threadTs: string
+    githubUsername: string
 ): Promise<void> {
     console.log(`[postToSlack] Starting conversion and upload for ${githubUsername}`);
 
@@ -155,8 +150,8 @@ async function postToSlack(
     let svgText = await svgResponse.text();
     console.log(`[postToSlack] SVG fetched, size: ${svgText.length} chars`);
 
-    // Add even padding to SVG by adjusting viewBox
-    svgText = addEvenPadding(svgText);
+    // Enhance SVG: show labels, uniform padding
+    svgText = enhanceSvg(svgText);
 
     console.log('[postToSlack] Converting SVG to PNG...');
     const resvg = new Resvg(svgText, {
@@ -226,7 +221,6 @@ async function postToSlack(
             ],
             channel_id: channel,
             initial_comment: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
-            thread_ts: threadTs || undefined,
         }),
     });
 
@@ -262,12 +256,10 @@ export default {
 
             console.log(`[scheduled] Posting daily grass report for ${githubUsername} to channel ${channel}`);
 
-            // Post GitHub grass (without thread_ts for cron job)
             await postToSlack(
                 env.SLACK_BOT_TOKEN,
                 channel,
-                githubUsername,
-                '' // No thread for scheduled posts
+                githubUsername
             );
 
             console.log('[scheduled] Daily grass report posted successfully!');

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { addEvenPadding } from './index';
+import { enhanceSvg } from './index';
 
 // Mock @resvg/resvg-wasm to avoid WASM initialization in tests
 vi.mock('@resvg/resvg-wasm', () => ({
@@ -8,57 +8,63 @@ vi.mock('@resvg/resvg-wasm', () => ({
 }));
 vi.mock('@resvg/resvg-wasm/index_bg.wasm', () => ({ default: {} }));
 
-describe('addEvenPadding', () => {
-    it('adds asymmetric padding to SVG dimensions', () => {
+describe('enhanceSvg', () => {
+    it('adds uniform padding to SVG dimensions', () => {
         const input = '<svg width="663" height="104"><rect/></svg>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
-        // L10 + R15 = 25, T15 + B15 = 30
-        expect(result).toContain('width="688"');
+        // padding 15 * 2 = 30
+        expect(result).toContain('width="693"');
         expect(result).toContain('height="134"');
     });
 
-    it('sets viewBox with negative offsets for padding', () => {
+    it('sets viewBox with uniform negative offsets', () => {
         const input = '<svg width="663" height="104"><rect/></svg>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
-        expect(result).toContain('viewBox="-10 -15 688 134"');
+        expect(result).toContain('viewBox="-15 -15 693 134"');
     });
 
     it('handles width/height with px unit', () => {
         const input = '<svg width="663px" height="104px"><rect/></svg>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
-        expect(result).toContain('width="688"');
+        expect(result).toContain('width="693"');
         expect(result).toContain('height="134"');
     });
 
     it('replaces existing viewBox', () => {
         const input = '<svg width="663" height="104" viewBox="0 0 663 104"><rect/></svg>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
-        expect(result).toContain('viewBox="-10 -15 688 134"');
-        // Should not have duplicate viewBox
+        expect(result).toContain('viewBox="-15 -15 693 134"');
         expect(result.match(/viewBox/g)?.length).toBe(1);
+    });
+
+    it('removes display:none to show hidden labels', () => {
+        const input = '<svg width="663" height="104"><text style="display:none;">Sun</text></svg>';
+        const result = enhanceSvg(input);
+
+        expect(result).not.toContain('display:none');
+        expect(result).toContain('Sun');
     });
 
     it('returns original SVG if no svg tag found', () => {
         const input = '<div>not an svg</div>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
         expect(result).toBe(input);
     });
 
     it('returns original SVG if width/height not found', () => {
         const input = '<svg><rect/></svg>';
-        const result = addEvenPadding(input);
+        const result = enhanceSvg(input);
 
         expect(result).toBe(input);
     });
 });
 
 describe('Hono app routes', () => {
-    // Dynamically import to get the app after mocks are set up
     let app: any;
 
     beforeEach(async () => {
