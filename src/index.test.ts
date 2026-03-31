@@ -9,20 +9,20 @@ vi.mock('@resvg/resvg-wasm', () => ({
 vi.mock('@resvg/resvg-wasm/index_bg.wasm', () => ({ default: {} }));
 
 describe('enhanceSvg', () => {
-    it('adds uniform padding to SVG dimensions', () => {
+    it('adds padding to SVG dimensions', () => {
         const input = '<svg width="663" height="104"><rect/></svg>';
         const result = enhanceSvg(input);
 
-        // padding 15 * 2 = 30
+        // paddingX 15*2 = 30, paddingTop 50 + paddingBottom 50 = 100
         expect(result).toContain('width="693"');
-        expect(result).toContain('height="134"');
+        expect(result).toContain('height="204"');
     });
 
-    it('sets viewBox with uniform negative offsets', () => {
+    it('sets viewBox with correct offsets', () => {
         const input = '<svg width="663" height="104"><rect/></svg>';
         const result = enhanceSvg(input);
 
-        expect(result).toContain('viewBox="-15 -15 693 134"');
+        expect(result).toContain('viewBox="-15 -50 693 204"');
     });
 
     it('handles width/height with px unit', () => {
@@ -30,14 +30,14 @@ describe('enhanceSvg', () => {
         const result = enhanceSvg(input);
 
         expect(result).toContain('width="693"');
-        expect(result).toContain('height="134"');
+        expect(result).toContain('height="204"');
     });
 
     it('replaces existing viewBox', () => {
         const input = '<svg width="663" height="104" viewBox="0 0 663 104"><rect/></svg>';
         const result = enhanceSvg(input);
 
-        expect(result).toContain('viewBox="-15 -15 693 134"');
+        expect(result).toContain('viewBox="-15 -50 693 204"');
         expect(result.match(/viewBox/g)?.length).toBe(1);
     });
 

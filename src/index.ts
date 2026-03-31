@@ -103,9 +103,13 @@ export function enhanceSvg(svgText: string): string {
     const originalWidth = parseInt(widthMatch[1], 10);
     const originalHeight = parseInt(heightMatch[1], 10);
 
-    const padding = 15;
-    const newWidth = originalWidth + padding * 2;
-    const newHeight = originalHeight + padding * 2;
+    // Generous vertical padding to improve Slack inline preview
+    // (Slack crops wide images; a ~3:1 aspect ratio displays fully)
+    const paddingX = 15;
+    const paddingTop = 50;
+    const paddingBottom = 50;
+    const newWidth = originalWidth + paddingX * 2;
+    const newHeight = originalHeight + paddingTop + paddingBottom;
 
     let result = svgText;
 
@@ -117,7 +121,7 @@ export function enhanceSvg(svgText: string): string {
         .replace(/width="[\d.]+(?:px)?"/, `width="${newWidth}"`)
         .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
 
-    const newViewBox = `viewBox="-${padding} -${padding} ${newWidth} ${newHeight}"`;
+    const newViewBox = `viewBox="-${paddingX} -${paddingTop} ${newWidth} ${newHeight}"`;
 
     if (/viewBox="[^"]*"/.test(newSvgTag)) {
         newSvgTag = newSvgTag.replace(/viewBox="[^"]*"/, newViewBox);
