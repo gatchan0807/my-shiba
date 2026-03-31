@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
+import interFont from './fonts/Inter-Regular.ttf';
 
 // Environment variables type definition
 type Bindings = {
@@ -158,12 +159,17 @@ async function postToSlack(
     svgText = enhanceSvg(svgText);
 
     console.log('[postToSlack] Converting SVG to PNG...');
+    const fontData = await (await fetch(interFont)).arrayBuffer();
     const resvg = new Resvg(svgText, {
         fitTo: {
             mode: 'width',
-            value: 1200, // Adjusted for Slack Block Kit recommended width
+            value: 1200,
         },
-        background: '#ffffff', // White background for better Slack display
+        background: '#ffffff',
+        font: {
+            fontBuffers: [fontData],
+            defaultFontFamily: 'Inter',
+        },
     });
 
     const pngData = resvg.render();

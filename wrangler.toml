@@ -2,6 +2,15 @@ name = "my-shiba"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 
+# Bundle TTF font files as binary assets
+[build]
+[build.upload]
+
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = true
+
 # Observability settings - Enable logs
 [observability]
 enabled = true
