@@ -224,6 +224,9 @@ async function postToSlack(
                     title: `GitHub Grass - ${githubUsername}`,
                 },
             ],
+            channel_id: channel,
+            initial_comment: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
+            thread_ts: threadTs || undefined,
         }),
     });
 
@@ -234,57 +237,7 @@ async function postToSlack(
         throw new Error(`Failed to complete upload: ${completeResult.error}`);
     }
 
-    // Step 4: Post to channel using chat.postMessage with image block
-    // slack_file renders better in Slack desktop than file attachment previews
-    const grassMessage = `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`;
-    const messageBody: {
-        channel: string;
-        text: string;
-        blocks: unknown[];
-        thread_ts?: string;
-    } = {
-        channel,
-        text: grassMessage,
-        blocks: [
-            {
-                type: 'image',
-                slack_file: { id: uploadUrlResult.file_id },
-                alt_text: `GitHub contribution graph for ${githubUsername}`,
-            },
-            {
-                type: 'context',
-                elements: [
-                    {
-                        type: 'mrkdwn',
-                        text: grassMessage,
-                    },
-                ],
-            },
-        ],
-    };
-
-    // Add thread_ts if replying to a thread
-    if (threadTs) {
-        messageBody.thread_ts = threadTs;
-    }
-
-    const postResponse = await fetch('https://slack.com/api/chat.postMessage', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(messageBody),
-    });
-
-    const postResult = await postResponse.json() as SlackApiResponse;
-
-    if (!postResult.ok) {
-        console.error('[postToSlack] Failed to post message:', postResult);
-        throw new Error(`Failed to post message: ${postResult.error}`);
-    }
-
-    console.log('[postToSlack] Image block posted successfully!');
+    console.log('[postToSlack] File uploaded and shared successfully!');
 }
 
 // Scheduled event handler for cron triggers
