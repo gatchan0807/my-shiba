@@ -18,21 +18,20 @@ type SlackUploadUrlResponse = {
     error?: string;
 };
 
-type SlackCompleteUploadResponse = {
+type SlackApiResponse = {
     ok: boolean;
     error?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// Initialize WASM once
-let wasmInitialized = false;
+let wasmInitPromise: Promise<void> | null = null;
 
-async function ensureWasmInitialized() {
-    if (!wasmInitialized) {
-        await initWasm(resvgWasm);
-        wasmInitialized = true;
+function ensureWasmInitialized(): Promise<void> {
+    if (!wasmInitPromise) {
+        wasmInitPromise = initWasm(resvgWasm);
     }
+    return wasmInitPromise;
 }
 
 // Root endpoint - Health check
@@ -104,7 +103,6 @@ export function addEvenPadding(svgText: string): string {
         return svgText;
     }
 
-    // Always specify radix (10) for parseInt
     const originalWidth = parseInt(widthMatch[1], 10);
     const originalHeight = parseInt(heightMatch[1], 10);
 
@@ -118,14 +116,11 @@ export function addEvenPadding(svgText: string): string {
     const newWidth = originalWidth + paddingLeft + paddingRight;
     const newHeight = originalHeight + paddingTop + paddingBottom;
 
-    // Create new SVG tag with updated dimensions
-    // Fix: viewBox should use original dimensions, not new dimensions
     let newSvgTag = svgTag
         .replace(/width="[\d.]+(?:px)?"/, `width="${newWidth}"`)
         .replace(/height="[\d.]+(?:px)?"/, `height="${newHeight}"`);
 
-    // Handle viewBox attribute properly to avoid duplication
-    // CRITICAL: viewBox must use NEW dimensions (with padding) to display full content
+    // viewBox uses padded dimensions with negative origin to offset content
     const newViewBox = `viewBox="-${paddingLeft} -${paddingTop} ${newWidth} ${newHeight}"`;
 
     if (/viewBox="[^"]*"/.test(newSvgTag)) {
@@ -136,12 +131,7 @@ export function addEvenPadding(svgText: string): string {
         newSvgTag = newSvgTag.replace(/^<svg([^>]*)>/, `<svg$1 ${newViewBox}>`);
     }
 
-    const result = svgText.replace(svgMatch[0], newSvgTag);
-    console.log(`[addEvenPadding] Added asymmetric padding: L${paddingLeft} T${paddingTop} R${paddingRight} B${paddingBottom}`);
-    console.log(`[addEvenPadding] Size change: ${originalWidth}x${originalHeight} -> ${newWidth}x${newHeight}`);
-    console.log(`[addEvenPadding] viewBox: -${paddingLeft} -${paddingTop} ${newWidth} ${newHeight}`);
-
-    return result;
+    return svgText.replace(svgMatch[0], newSvgTag);
 }
 
 // Helper function to convert SVG to PNG and upload to Slack
@@ -168,8 +158,6 @@ async function postToSlack(
     // Add even padding to SVG by adjusting viewBox
     svgText = addEvenPadding(svgText);
 
-    // Convert SVG to PNG using resvg-wasm
-    // Target size: 1500x260 (from original 663x104)
     console.log('[postToSlack] Converting SVG to PNG...');
     const resvg = new Resvg(svgText, {
         fitTo: {
@@ -187,7 +175,6 @@ async function postToSlack(
     const now = new Date();
     const filename = `github-grass-${githubUsername}-${now.toISOString().split('T')[0]}.png`;
 
-    // Upload PNG to Slack using files.uploadV2
     // Step 1: Get upload URL
     const uploadParams = new URLSearchParams({
         filename: filename,
@@ -205,7 +192,6 @@ async function postToSlack(
     });
 
     const uploadUrlResult = await uploadUrlResponse.json() as SlackUploadUrlResponse;
-    console.log('[postToSlack] Upload URL response:', JSON.stringify(uploadUrlResult));
 
     if (!uploadUrlResult.ok) {
         throw new Error(`Failed to get upload URL: ${uploadUrlResult.error}`);
@@ -241,8 +227,7 @@ async function postToSlack(
         }),
     });
 
-    const completeResult = await completeResponse.json() as SlackCompleteUploadResponse;
-    console.log('[postToSlack] Complete upload response:', JSON.stringify(completeResult));
+    const completeResult = await completeResponse.json() as SlackApiResponse;
 
     if (!completeResult.ok) {
         console.error('[postToSlack] Failed to complete upload:', completeResult);
@@ -250,12 +235,16 @@ async function postToSlack(
     }
 
     // Step 4: Post to channel using chat.postMessage with image block
-    // This uses slack_file to reference the uploaded file, which renders
-    // better in Slack's desktop app than file attachment previews
-    console.log(`[postToSlack] Posting image block to channel: ${channel}`);
-    const messageBody: Record<string, unknown> = {
-        channel: channel,
-        text: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
+    // slack_file renders better in Slack desktop than file attachment previews
+    const grassMessage = `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`;
+    const messageBody: {
+        channel: string;
+        text: string;
+        blocks: unknown[];
+        thread_ts?: string;
+    } = {
+        channel,
+        text: grassMessage,
         blocks: [
             {
                 type: 'image',
@@ -267,7 +256,7 @@ async function postToSlack(
                 elements: [
                     {
                         type: 'mrkdwn',
-                        text: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
+                        text: grassMessage,
                     },
                 ],
             },
@@ -288,8 +277,7 @@ async function postToSlack(
         body: JSON.stringify(messageBody),
     });
 
-    const postResult = await postResponse.json() as SlackCompleteUploadResponse;
-    console.log('[postToSlack] Post message response:', JSON.stringify(postResult));
+    const postResult = await postResponse.json() as SlackApiResponse;
 
     if (!postResult.ok) {
         console.error('[postToSlack] Failed to post message:', postResult);
@@ -314,10 +302,7 @@ export default {
         }
 
         try {
-            // Initialize WASM if not already done
-            if (!wasmInitialized) {
-                await ensureWasmInitialized();
-            }
+            await ensureWasmInitialized();
 
             const githubUsername = env.GH_USERNAME;
             const channel = env.SLACK_CHANNEL_ID;
