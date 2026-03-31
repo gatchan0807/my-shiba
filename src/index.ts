@@ -159,7 +159,6 @@ async function postToSlack(
     svgText = enhanceSvg(svgText);
 
     console.log('[postToSlack] Converting SVG to PNG...');
-    const fontData = await (await fetch(interFont)).arrayBuffer();
     const resvg = new Resvg(svgText, {
         fitTo: {
             mode: 'width',
@@ -167,7 +166,7 @@ async function postToSlack(
         },
         background: '#ffffff',
         font: {
-            fontBuffers: [fontData],
+            fontBuffers: [interFont],
             defaultFontFamily: 'Inter',
         },
     });
