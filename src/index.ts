@@ -45,6 +45,13 @@ app.get('/', (c) => {
 
 // Slack events endpoint
 app.post('/slack/events', async (c) => {
+    // Skip Slack retry requests to avoid duplicate processing
+    const retryNum = c.req.header('X-Slack-Retry-Num');
+    if (retryNum) {
+        console.log(`[slack/events] Skipping retry request (retry #${retryNum})`);
+        return c.json({ ok: true });
+    }
+
     try {
         const body = await c.req.json();
 
@@ -79,7 +86,7 @@ app.post('/slack/events', async (c) => {
 });
 
 // Helper function to add even padding to SVG
-function addEvenPadding(svgText: string): string {
+export function addEvenPadding(svgText: string): string {
     // Extract the SVG tag to get width and height
     const svgMatch = svgText.match(/<svg[^>]*>/);
     if (!svgMatch) {
@@ -167,7 +174,7 @@ async function postToSlack(
     const resvg = new Resvg(svgText, {
         fitTo: {
             mode: 'width',
-            value: 1500, // Increased from 1200 to 1500
+            value: 1200, // Adjusted for Slack Block Kit recommended width
         },
         background: '#ffffff', // White background for better Slack display
     });
@@ -216,8 +223,8 @@ async function postToSlack(
     }
     console.log('[postToSlack] PNG uploaded successfully');
 
-    // Step 3: Complete the upload and share to channel
-    console.log(`[postToSlack] Completing upload for channel: ${channel}`);
+    // Step 3: Complete the upload (without sharing to channel yet)
+    console.log('[postToSlack] Completing upload...');
     const completeResponse = await fetch('https://slack.com/api/files.completeUploadExternal', {
         method: 'POST',
         headers: {
@@ -231,8 +238,6 @@ async function postToSlack(
                     title: `GitHub Grass - ${githubUsername}`,
                 },
             ],
-            channel_id: channel,
-            initial_comment: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
         }),
     });
 
@@ -244,7 +249,54 @@ async function postToSlack(
         throw new Error(`Failed to complete upload: ${completeResult.error}`);
     }
 
-    console.log('[postToSlack] PNG file uploaded and shared successfully!');
+    // Step 4: Post to channel using chat.postMessage with image block
+    // This uses slack_file to reference the uploaded file, which renders
+    // better in Slack's desktop app than file attachment previews
+    console.log(`[postToSlack] Posting image block to channel: ${channel}`);
+    const messageBody: Record<string, unknown> = {
+        channel: channel,
+        text: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
+        blocks: [
+            {
+                type: 'image',
+                slack_file: { id: uploadUrlResult.file_id },
+                alt_text: `GitHub contribution graph for ${githubUsername}`,
+            },
+            {
+                type: 'context',
+                elements: [
+                    {
+                        type: 'mrkdwn',
+                        text: `🌱 GitHub Grass for @${githubUsername} (${now.toLocaleDateString('ja-JP')})`,
+                    },
+                ],
+            },
+        ],
+    };
+
+    // Add thread_ts if replying to a thread
+    if (threadTs) {
+        messageBody.thread_ts = threadTs;
+    }
+
+    const postResponse = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(messageBody),
+    });
+
+    const postResult = await postResponse.json() as SlackCompleteUploadResponse;
+    console.log('[postToSlack] Post message response:', JSON.stringify(postResult));
+
+    if (!postResult.ok) {
+        console.error('[postToSlack] Failed to post message:', postResult);
+        throw new Error(`Failed to post message: ${postResult.error}`);
+    }
+
+    console.log('[postToSlack] Image block posted successfully!');
 }
 
 // Scheduled event handler for cron triggers
