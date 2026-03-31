@@ -166,7 +166,7 @@ async function postToSlack(
         },
         background: '#ffffff',
         font: {
-            fontBuffers: [interFont],
+            fontBuffers: [new Uint8Array(interFont)],
             defaultFontFamily: 'Inter',
         },
     });
